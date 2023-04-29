@@ -30,7 +30,7 @@ class GoogLeNet(nn.Module):
         self.inception5a = Inception(832, 256, 160, 320, 32, 128, 128)
         self.inception5b = Inception(832, 384, 192, 384, 48, 128, 128)
 
-        # 使用辅助分类器
+        # 使用辅助分类器 只有训练时使用
         if self.aux_logits:
             self.aux1 = InceptionAux(512, num_classes)
             self.aux2 = InceptionAux(528, num_classes)
@@ -63,7 +63,7 @@ class GoogLeNet(nn.Module):
         # N x 480 x 14 x 14
         x = self.inception4a(x)
         # N x 512 x 14 x 14
-        if self.training and self.aux_logits:  # eval model lose this layer
+        if self.training and self.aux_logits:  # 只有训练时使用
             aux1 = self.aux1(x)
 
         x = self.inception4b(x)
@@ -72,7 +72,7 @@ class GoogLeNet(nn.Module):
         # N x 512 x 14 x 14
         x = self.inception4d(x)
         # N x 528 x 14 x 14
-        if self.training and self.aux_logits:  # eval model lose this layer
+        if self.training and self.aux_logits:  # 只有训练时使用
             aux2 = self.aux2(x)
 
         x = self.inception4e(x)

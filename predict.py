@@ -18,7 +18,7 @@ def main():
          transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
     # load image
-    img_path = "../tulip.jpg"
+    img_path = "1.jpg"
     assert os.path.exists(img_path), "file: '{}' dose not exist.".format(img_path)
     img = Image.open(img_path)
     plt.imshow(img)
@@ -42,7 +42,7 @@ def main():
     assert os.path.exists(weights_path), "file: '{}' dose not exist.".format(weights_path)
     missing_keys, unexpected_keys = model.load_state_dict(torch.load(weights_path, map_location=device),
                                                           strict=False)
-
+# strict默认为True  可以略过辅助分类器的权重参数
     model.eval()
     with torch.no_grad():
         # predict class

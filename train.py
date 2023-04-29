@@ -84,7 +84,7 @@ def main():
     save_path = './googleNet.pth'
     train_steps = len(train_loader)
     for epoch in range(epochs):
-        # train
+        # train 训练
         net.train()
         running_loss = 0.0
         train_bar = tqdm(train_loader, file=sys.stdout)
@@ -93,10 +93,10 @@ def main():
             optimizer.zero_grad()
             logits, aux_logits2, aux_logits1 = net(images.to(device))
             loss0 = loss_function(logits, labels.to(device))
-            loss1 = loss_function(aux_logits1, labels.to(device))
-            loss2 = loss_function(aux_logits2, labels.to(device))
-            loss = loss0 + loss1 * 0.3 + loss2 * 0.3
-            loss.backward()
+            loss1 = loss_function(aux_logits1, labels.to(device))   # 辅助分类器1 损失值
+            loss2 = loss_function(aux_logits2, labels.to(device))   # 辅助分类器2 损失值
+            loss = loss0 + loss1 * 0.3 + loss2 * 0.3                # 最终损失 0.3 论文
+            loss.backward()     # 反向传播
             optimizer.step()
 
             # print statistics
@@ -106,7 +106,7 @@ def main():
                                                                      epochs,
                                                                      loss)
 
-        # validate
+        # validate test 无辅助分类器
         net.eval()
         acc = 0.0  # accumulate accurate number / epoch
         with torch.no_grad():
