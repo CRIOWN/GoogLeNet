@@ -60,7 +60,7 @@ class GoogLeNet(nn.Module):
         # N x 480 x 14 x 14
         x = self.inception4a(x)
         # N x 512 x 14 x 14
-        if self.training and self.aux_logits:    # eval model lose this layer
+        if self.training and self.aux_logits:  # eval model lose this layer
             aux1 = self.aux1(x)
 
         x = self.inception4b(x)
@@ -69,7 +69,7 @@ class GoogLeNet(nn.Module):
         # N x 512 x 14 x 14
         x = self.inception4d(x)
         # N x 528 x 14 x 14
-        if self.training and self.aux_logits:    # eval model lose this layer
+        if self.training and self.aux_logits:  # eval model lose this layer
             aux2 = self.aux2(x)
 
         x = self.inception4e(x)
@@ -88,7 +88,7 @@ class GoogLeNet(nn.Module):
         x = self.dropout(x)
         x = self.fc(x)
         # N x 1000 (num_classes)
-        if self.training and self.aux_logits:   # eval model lose this layer
+        if self.training and self.aux_logits:  # eval model lose this layer
             return x, aux2, aux1
         return x
 
@@ -102,47 +102,61 @@ class GoogLeNet(nn.Module):
                 nn.init.normal_(m.weight, 0, 0.01)
                 nn.init.constant_(m.bias, 0)
 
-# inception模板
+
+# inception模块 V1
 class Inception(nn.Module):
     def __init__(self, in_channels, ch1x1, ch3x3red, ch3x3, ch5x5red, ch5x5, pool_proj):
         super(Inception, self).__init__()
+        # inception v1 包含四个branch
+        # 一个1x1 卷积核
+        # 一个1x1 卷积核——> 3x3卷积核
+        # 一个1x1 卷积核——> 5x5卷积核
+        # 一个maxpooling ——> 1x1卷积核
 
+        # 分支1 1x1卷积核
         self.branch1 = BasicConv2d(in_channels, ch1x1, kernel_size=1)
 
+        # 2. 先用1x1卷积核降维再3x3
         self.branch2 = nn.Sequential(
             BasicConv2d(in_channels, ch3x3red, kernel_size=1),
-            BasicConv2d(ch3x3red, ch3x3, kernel_size=3, padding=1)   # 保证输出大小等于输入大小
+            BasicConv2d(ch3x3red, ch3x3, kernel_size=3, padding=1)
+            # 保证输出大小等于输入大小
         )
 
+        # 3. 1x1 5x5
         self.branch3 = nn.Sequential(
             BasicConv2d(in_channels, ch5x5red, kernel_size=1),
-            # 在官方的实现中，其实是3x3的kernel并不是5x5，这里我也懒得改了，具体可以参考下面的issue
-            # Please see https://github.com/pytorch/vision/issues/906 for details.
-            BasicConv2d(ch5x5red, ch5x5, kernel_size=5, padding=2)   # 保证输出大小等于输入大小
+            BasicConv2d(ch5x5red, ch5x5, kernel_size=5, padding=2)  # 保证输出大小等于输入大小
         )
 
+        # 分支4 池化+降维
         self.branch4 = nn.Sequential(
             nn.MaxPool2d(kernel_size=3, stride=1, padding=1),
             BasicConv2d(in_channels, pool_proj, kernel_size=1)
         )
 
     def forward(self, x):
+        # 依次执行四个branch
         branch1 = self.branch1(x)
         branch2 = self.branch2(x)
         branch3 = self.branch3(x)
         branch4 = self.branch4(x)
 
         outputs = [branch1, branch2, branch3, branch4]
-        return torch.cat(outputs, 1)
+        return torch.cat(outputs, 1)  # 合并
 
 
+# 辅助分类器
+# 5x5+3 平均池化
+# 1x1 卷积核
+# 全连接2048->1024
+# 全连接1024-> num
 
 class InceptionAux(nn.Module):
     def __init__(self, in_channels, num_classes):
         super(InceptionAux, self).__init__()
         self.averagePool = nn.AvgPool2d(kernel_size=5, stride=3)
         self.conv = BasicConv2d(in_channels, 128, kernel_size=1)  # output[batch, 128, 4, 4]
-
         self.fc1 = nn.Linear(2048, 1024)
         self.fc2 = nn.Linear(1024, num_classes)
 
@@ -161,6 +175,7 @@ class InceptionAux(nn.Module):
         x = self.fc2(x)
         # N x num_classes
         return x
+
 
 # 卷积层模板
 class BasicConv2d(nn.Module):
